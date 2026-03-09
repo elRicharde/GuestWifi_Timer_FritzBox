@@ -1,0 +1,22 @@
+schedule:
+  monday:
+    on: "08:00"
+    off: "22:00"
+  tuesday:
+    on: "08:00"
+    off: "22:00"
+  wednesday:
+    on: "08:00"
+    off: "22:00"
+  thursday:
+    on: "08:00"
+    off: "22:00"
+  friday:
+    on: "08:00"
+    off: "23:00"
+  saturday:
+    on: "09:00"
+    off: "23:00"
+  sunday:
+    on: "09:00"
+    off: "22:00"

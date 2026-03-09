@@ -1,0 +1,3 @@
+fritzconnection
+python-dotenv
+pyyaml
