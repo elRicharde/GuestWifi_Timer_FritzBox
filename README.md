@@ -52,6 +52,22 @@ Folgende Zeile hinzufügen (prüft jede Minute):
 * * * * * /usr/bin/python3 /home/pi/guest_wifi_timer/guest_wifi_timer.py >> /home/pi/guest_wifi_timer/timer.log 2>&1
 ```
 
+### 7. Log-Rotation einrichten (optional)
+Das Log wächst mit der Zeit. Einfache Lösung mit logrotate:
+```bash
+sudo nano /etc/logrotate.d/guest-wifi-timer
+```
+Folgenden Inhalt einfügen:
+```
+/home/pi/guest_wifi_timer/timer.log {
+    weekly
+    rotate 4
+    compress
+    missingok
+    notifempty
+}
+```
+
 ## Dateien
 
 | Datei | Beschreibung |
