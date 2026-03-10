@@ -6,8 +6,10 @@ schedule:
     on: "06:00"
     off: "22:00"
   tuesday:
-    on: "06:00"
-    off: "22:00"
+    -  on: "06:00"
+       off: "09:00"
+    -  on: "12:00"
+       off: "13:00"
   wednesday:
     on: "06:00"
     off: "22:00"
@@ -23,3 +25,32 @@ schedule:
   sunday:
     on: "06:00"
     off: "22:00"
+
+
+
+
+# schedule:
+#   # Wochentage: on/off im 24h-Format
+#   # Nachtuebergreifend moeglich: off < on bedeutet "aus am naechsten Tag"
+#   # Mehrere Zeitfenster pro Tag moeglich (als Liste mit -)
+#   monday:
+#     on: "06:00"
+#     off: "22:00"
+#   tuesday:
+#     on: "06:00"
+#     off: "22:00"
+#   wednesday:
+#     on: "06:00"
+#     off: "22:00"
+#   thursday:
+#     on: "06:00"
+#     off: "22:00"
+#   friday:
+#     on: "06:00"
+#     off: "02:00"    # aus: Samstag 02:00
+#   saturday:
+#     on: "07:00"
+#     off: "02:00"    # aus: Sonntag 02:00
+#   sunday:
+#     on: "07:00"
+#     off: "22:00"
