@@ -5,51 +5,14 @@ Läuft als Cron-Job auf einem Raspberry Pi.
 
 ## Setup auf dem Raspberry Pi
 
-### 1. Code auf den Raspberry Pi bringen
-
-**Option A: Per SCP vom PC kopieren** (einfachster Weg, kein SSH-Key auf dem Raspi nötig)
-
-Vom Windows-PC aus (PowerShell):
-```powershell
-scp -r .\GuestWifi_Timer_FritzBox pi@<raspi-ip>:~/guest_wifi_timer
-```
-Für spätere Updates nach Code-Änderungen:
-```powershell
-scp .\guest_wifi_timer.py .\schedule.yaml .\requirements.txt pi@<raspi-ip>:~/guest_wifi_timer/
-```
-
-**Option B: Git Clone mit Deploy Key** (ermöglicht `git pull` direkt auf dem Raspi)
-
-1. SSH-Key auf dem Raspi erzeugen:
+### 1. Repository klonen
 ```bash
-ssh-keygen -t ed25519 -C "raspi-deploy-key" -f ~/.ssh/github_deploy
-```
-2. Public Key anzeigen und kopieren:
-```bash
-cat ~/.ssh/github_deploy.pub
-```
-3. In GitHub unter *Repository → Settings → Deploy keys → Add deploy key* einfügen (Read-only reicht)
-4. SSH-Config auf dem Raspi anlegen:
-```bash
-nano ~/.ssh/config
-```
-Folgenden Inhalt einfügen:
-```
-Host github.com
-    IdentityFile ~/.ssh/github_deploy
-```
-5. Klonen:
-```bash
-git clone git@github.com:elRicharde/GuestWifi_Timer_FritzBox.git ~/guest_wifi_timer
+git clone https://github.com/elRicharde/GuestWifi_Timer_FritzBox.git ~/guest_wifi_timer
+cd ~/guest_wifi_timer
 ```
 Für spätere Updates:
 ```bash
 cd ~/guest_wifi_timer && git pull
-```
-
-Dann auf dem Raspi:
-```bash
-cd ~/guest_wifi_timer
 ```
 
 ### 2. Abhängigkeiten installieren
@@ -90,7 +53,7 @@ crontab -e
 ```
 Folgende Zeile hinzufügen (prüft jede Minute):
 ```
-* * * * * /usr/bin/python3 /home/pi/guest_wifi_timer/guest_wifi_timer.py >> /home/pi/guest_wifi_timer/timer.log 2>&1
+* * * * * /usr/bin/python3 ~/guest_wifi_timer/guest_wifi_timer.py >> ~/guest_wifi_timer/timer.log 2>&1
 ```
 
 ### 7. Log-Rotation einrichten (optional)
@@ -100,7 +63,7 @@ sudo nano /etc/logrotate.d/guest-wifi-timer
 ```
 Folgenden Inhalt einfügen:
 ```
-/home/pi/guest_wifi_timer/timer.log {
+~/guest_wifi_timer/timer.log {
     weekly
     rotate 4
     compress
