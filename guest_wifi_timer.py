@@ -46,49 +46,91 @@ def load_schedule():
     return config["schedule"]
 
 
+def parse_time(time_str):
+    """Parse a HH:MM string into a time object."""
+    return datetime.strptime(time_str, "%H:%M").time()
+
+
+def get_windows(day_schedule):
+    """Normalize a day's schedule to a list of {on, off} windows.
+
+    Supports both single window (dict) and multiple windows (list).
+    """
+    if isinstance(day_schedule, dict):
+        return [day_schedule]
+    return day_schedule
+
+
 def validate_schedule(schedule):
-    """Validate schedule entries: check keys, time format, and on < off."""
-    for day, times in schedule.items():
+    """Validate schedule entries: check keys, time format, and on != off."""
+    for day, entry in schedule.items():
         if day not in DAY_NAMES:
             print(f"[{timestamp(datetime.now())}] FEHLER: Unbekannter Wochentag '{day}' in schedule.yaml")
             sys.exit(1)
 
-        if "on" not in times or "off" not in times:
-            print(f"[{timestamp(datetime.now())}] FEHLER: '{day}' braucht sowohl 'on' als auch 'off' in schedule.yaml")
-            sys.exit(1)
+        windows = get_windows(entry)
+        for i, times in enumerate(windows):
+            label = f"{day}[{i}]" if len(windows) > 1 else day
 
-        for key in ("on", "off"):
-            try:
-                datetime.strptime(times[key], "%H:%M")
-            except ValueError:
-                print(f"[{timestamp(datetime.now())}] FEHLER: Ungueltiges Zeitformat '{times[key]}' bei {day}.{key} (erwartet HH:MM)")
+            if "on" not in times or "off" not in times:
+                print(f"[{timestamp(datetime.now())}] FEHLER: '{label}' braucht sowohl 'on' als auch 'off' in schedule.yaml")
                 sys.exit(1)
 
-        on_time = datetime.strptime(times["on"], "%H:%M").time()
-        off_time = datetime.strptime(times["off"], "%H:%M").time()
-        if on_time >= off_time:
-            print(f"[{timestamp(datetime.now())}] FEHLER: {day}.on ({times['on']}) muss vor {day}.off ({times['off']}) liegen (nachtuebergreifend nicht unterstuetzt)")
-            sys.exit(1)
+            for key in ("on", "off"):
+                try:
+                    datetime.strptime(times[key], "%H:%M")
+                except ValueError:
+                    print(f"[{timestamp(datetime.now())}] FEHLER: Ungueltiges Zeitformat '{times[key]}' bei {label}.{key} (erwartet HH:MM)")
+                    sys.exit(1)
+
+            if times["on"] == times["off"]:
+                print(f"[{timestamp(datetime.now())}] FEHLER: {label}.on und {label}.off duerfen nicht gleich sein")
+                sys.exit(1)
+
+
+def is_in_window(window, current_time):
+    """Check if current_time falls within a single on/off window.
+
+    Supports overnight windows where on > off.
+    """
+    on_time = parse_time(window["on"])
+    off_time = parse_time(window["off"])
+
+    if on_time < off_time:
+        return on_time <= current_time < off_time
+    else:
+        return current_time >= on_time
 
 
 def should_be_enabled(schedule, now):
     """Determine if guest WiFi should be enabled right now.
 
-    Returns True if the current time falls within the on/off window
-    for today's weekday. Returns False otherwise or if the day has
-    no schedule entry.
+    Checks today's windows and yesterday's overnight windows.
+    Supports multiple windows per day and overnight schedules.
     """
-    day_name = DAY_NAMES[now.weekday()]
-    day_schedule = schedule.get(day_name)
-
-    if not day_schedule:
-        return False
-
-    on_time = datetime.strptime(day_schedule["on"], "%H:%M").time()
-    off_time = datetime.strptime(day_schedule["off"], "%H:%M").time()
     current_time = now.time()
 
-    return on_time <= current_time < off_time
+    # Check if yesterday's overnight windows extend into today
+    yesterday_name = DAY_NAMES[(now.weekday() - 1) % 7]
+    yesterday_entry = schedule.get(yesterday_name)
+    if yesterday_entry:
+        for window in get_windows(yesterday_entry):
+            y_on = parse_time(window["on"])
+            y_off = parse_time(window["off"])
+            if y_on > y_off and current_time < y_off:
+                return True
+
+    # Check today's windows
+    today_name = DAY_NAMES[now.weekday()]
+    today_entry = schedule.get(today_name)
+    if not today_entry:
+        return False
+
+    for window in get_windows(today_entry):
+        if is_in_window(window, current_time):
+            return True
+
+    return False
 
 
 def main():
