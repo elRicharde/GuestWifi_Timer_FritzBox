@@ -43,7 +43,24 @@ def load_schedule():
         print(f"[{timestamp(datetime.now())}] FEHLER: Schluessel 'schedule' fehlt in schedule.yaml")
         sys.exit(1)
 
-    return config["schedule"]
+    return normalize_yaml_booleans(config["schedule"])
+
+
+def normalize_yaml_booleans(schedule):
+    """Fix YAML boolean keys: unquoted 'on'/'off' are parsed as True/False by PyYAML."""
+    BOOL_MAP = {True: "on", False: "off"}
+    normalized = {}
+    for day, entry in schedule.items():
+        if isinstance(entry, dict):
+            normalized[day] = {BOOL_MAP.get(k, k): v for k, v in entry.items()}
+        elif isinstance(entry, list):
+            normalized[day] = [
+                {BOOL_MAP.get(k, k): v for k, v in window.items()}
+                for window in entry
+            ]
+        else:
+            normalized[day] = entry
+    return normalized
 
 
 def parse_time(time_str):
