@@ -6,6 +6,7 @@ the Fritz!Box guest WiFi accordingly via TR-064 API.
 Designed to run as a cron job (every minute).
 """
 
+import json
 import os
 import sys
 from datetime import datetime
@@ -18,6 +19,7 @@ from fritzconnection.lib.fritzwlan import FritzGuestWLAN
 from requests.exceptions import ConnectionError as RequestsConnectionError
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+OVERRIDE_FILE = SCRIPT_DIR / "override.json"
 DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
@@ -150,6 +152,34 @@ def should_be_enabled(schedule, now):
     return False
 
 
+def check_override(now):
+    """Check if an active override exists. Returns (True, until_dt) or (False, None)."""
+    if not OVERRIDE_FILE.exists():
+        return False, None
+
+    try:
+        with open(OVERRIDE_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return False, None
+
+    until_str = data.get("until")
+    if not until_str:
+        return False, None
+
+    try:
+        until_dt = datetime.fromisoformat(until_str)
+    except ValueError:
+        return False, None
+
+    if now >= until_dt:
+        OVERRIDE_FILE.unlink(missing_ok=True)
+        print(f"[{timestamp(now)}] Override abgelaufen - entfernt")
+        return False, None
+
+    return True, until_dt
+
+
 def main():
     now = datetime.now()
     load_dotenv(SCRIPT_DIR / ".env")
@@ -162,9 +192,19 @@ def main():
         print(f"[{timestamp(now)}] FEHLER: FRITZBOX_PASSWORD nicht gesetzt in .env")
         sys.exit(1)
 
+    override_active, override_until = check_override(now)
+
     schedule = load_schedule()
     validate_schedule(schedule)
-    desired = should_be_enabled(schedule, now)
+    schedule_desired = should_be_enabled(schedule, now)
+
+    if override_active:
+        desired = True
+        remaining = override_until - now
+        minutes_left = int(remaining.total_seconds() / 60)
+        print(f"[{timestamp(now)}] Override aktiv bis {timestamp(override_until)} (noch {minutes_left} Min.)")
+    else:
+        desired = schedule_desired
 
     try:
         guest_wlan = FritzGuestWLAN(address=address, user=user, password=password)

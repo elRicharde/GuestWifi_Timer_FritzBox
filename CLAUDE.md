@@ -18,15 +18,18 @@ Folgende Entscheidungen wurden bei der Projektplanung bewusst getroffen:
 - **Soll/Ist-Vergleich** → Script schaltet nur wenn nötig, vermeidet unnötige API-Calls bei jedem Cron-Lauf
 
 ## Architektur
-- **Einzelnes Script** (`guest_wifi_timer.py`) - kein Package, kein Framework
-- **Cron-basiert** - wird jede Minute aufgerufen, prüft Soll vs. Ist, schaltet nur bei Abweichung
+- **Timer-Script** (`guest_wifi_timer.py`) - Cron-basiert, jede Minute, prüft Soll vs. Ist
+- **Telegram Bot** (`telegram_bot.py`) - Daemon (systemd), erlaubt Override per Inline-Buttons
+- **Override-Mechanismus** - Bot schreibt `override.json`, Timer-Script respektiert sie
 - **Zielplattform**: Raspberry Pi (Linux/ARM) mit bestehendem Pi-hole, entwickelt auf Windows
 
 ## Projektstruktur
 ```
-guest_wifi_timer.py   # Hauptscript (Einstiegspunkt)
+guest_wifi_timer.py   # Hauptscript (Einstiegspunkt, Cron-Job)
+telegram_bot.py       # Telegram Bot fuer Override-Steuerung (systemd-Daemon)
 schedule.yaml         # Wochenplan: on/off-Zeiten pro Wochentag (englische Namen)
-.env                  # Fritz!Box-Zugangsdaten (NICHT im Git)
+override.json         # Temporaerer Override (von Bot geschrieben, NICHT im Git)
+.env                  # Zugangsdaten + Bot-Token (NICHT im Git)
 .env.example          # Vorlage für .env
 requirements.txt      # Python-Abhängigkeiten
 ```
@@ -64,6 +67,14 @@ Müssen englisch und lowercase sein: `monday`, `tuesday`, `wednesday`, `thursday
 | `FRITZBOX_ADDRESS` | `192.168.178.1` | IP der Fritz!Box |
 | `FRITZBOX_USER` | `admin` | Benutzername |
 | `FRITZBOX_PASSWORD` | *(pflicht)* | Passwort |
+| `TELEGRAM_BOT_TOKEN` | *(pflicht fuer Bot)* | Token von @BotFather |
+| `TELEGRAM_ALLOWED_USERS` | *(pflicht fuer Bot)* | Komma-getrennte Telegram User-IDs |
+
+### Override-Mechanismus
+- `telegram_bot.py` schreibt `override.json` mit Ablaufzeit
+- `guest_wifi_timer.py` prüft bei jedem Lauf: Override vorhanden + nicht abgelaufen → WLAN bleibt AN
+- Nach Ablauf löscht das Timer-Script die Datei automatisch
+- Format: `{"until": "ISO-8601", "created": "ISO-8601"}`
 
 ### Logging
 - Alle Ausgaben via `print()` nach stdout
@@ -75,6 +86,7 @@ Müssen englisch und lowercase sein: `monday`, `tuesday`, `wednesday`, `thursday
 - `fritzconnection` - TR-064 API Client
 - `python-dotenv` - .env-Datei laden
 - `pyyaml` - YAML-Konfiguration parsen
+- `python-telegram-bot` - Telegram Bot API (v21+, async)
 
 ## Sicherheit
 - `.env` ist in `.gitignore` - niemals Zugangsdaten committen
@@ -89,9 +101,7 @@ python3 guest_wifi_timer.py
 Prüft den aktuellen Zeitplan und gibt den Soll/Ist-Vergleich auf stdout aus.
 
 ## Häufige Erweiterungen
-- Mehrere Zeitfenster pro Tag (z.B. Mittagspause)
 - Logging in Datei statt stdout
-- Nachtübergreifende Zeiten (on > off, z.B. 22:00-06:00)
 - Statusabfrage als separates CLI-Kommando
 
 ## Fritz!Box TR-064 API Referenz
