@@ -190,28 +190,17 @@ Speichern: `Ctrl+O`, Enter, `Ctrl+X`
 tail -20 ~/guest_wifi_timer/timer.log
 ```
 
-### 2.7 Log-Rotation einrichten (optional)
+### 2.7 Log-Rotation einrichten
 
-Das Log waechst mit der Zeit. Damit es nicht die SD-Karte vollschreibt:
+Das Log waechst mit der Zeit (~3,5 MB/Monat). Damit es nicht die SD-Karte vollschreibt, ist eine `logrotate.conf` im Repo enthalten. Einmalig verlinken:
 
 ```bash
-sudo nano /etc/logrotate.d/guest-wifi-timer
+sudo ln -sf ~/guest_wifi_timer/logrotate.conf /etc/logrotate.d/guest-wifi-timer
 ```
 
-Folgenden Inhalt einfuegen:
-```
-/home/pi/guest_wifi_timer/timer.log {
-    weekly
-    rotate 4
-    compress
-    missingok
-    notifempty
-}
-```
+> Haelt maximal 4 Wochen Log-Dateien und komprimiert aeltere. Aenderungen im Repo greifen automatisch beim naechsten Rotationslauf.
 
-> Haelt maximal 4 Wochen Log-Dateien und komprimiert aeltere.
-
-Speichern: `Ctrl+O`, Enter, `Ctrl+X`
+**Hinweis:** Der Pfad in `logrotate.conf` ist auf `/home/richarde/guest_wifi_timer/` eingestellt. Falls dein Benutzer anders heisst, passe den Pfad in der Datei an.
 
 ---
 

@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "PowerShell([Console]::Beep\\(523,200\\); [Console]::Beep\\(659,200\\); [Console]::Beep\\(784,200\\); [Console]::Beep\\(1047,400\\))",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

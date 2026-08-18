@@ -28,6 +28,7 @@ Folgende Entscheidungen wurden bei der Projektplanung bewusst getroffen:
 guest_wifi_timer.py   # Hauptscript (Einstiegspunkt, Cron-Job)
 telegram_bot.py       # Telegram Bot fuer Override-Steuerung (systemd-Daemon)
 schedule.yaml         # Wochenplan: on/off-Zeiten pro Wochentag (englische Namen)
+logrotate.conf        # Log-Rotation (symlinked nach /etc/logrotate.d/)
 override.json         # Temporaerer Override (von Bot geschrieben, NICHT im Git)
 .env                  # Zugangsdaten + Bot-Token (NICHT im Git)
 .env.example          # Vorlage für .env
